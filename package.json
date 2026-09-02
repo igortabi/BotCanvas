@@ -1,0 +1,30 @@
+{
+  "name": "botcanvas",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "Api": "tsx watch ./Api/src/index.ts"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/igortabi/BotCanvas.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/igortabi/BotCanvas/issues"
+  },
+  "homepage": "https://github.com/igortabi/BotCanvas#readme",
+  "dependencies": {
+    "wasmoon": "^1.16.0"
+  },
+  "devDependencies": {
+    "@types/node": "^26.4.1",
+    "tsx": "^4.23.13",
+    "typescript": "^7.0.2"
+  }
+}
