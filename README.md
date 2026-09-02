@@ -3,7 +3,7 @@
 **Bot Canvas** is a free and open-source platform for creating Discord bots using Lua.
 
 The goal is to make Discord bot development accessible without requiring users to learn JavaScript or TypeScript, while still providing enough flexibility for more advanced projects.
-
+support discord server: https://discord.gg/RYj9YncZyr
 > **Status:** Early development / proof of concept
 
 ## Vision
