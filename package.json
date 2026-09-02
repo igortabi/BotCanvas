@@ -20,6 +20,8 @@
   },
   "homepage": "https://github.com/igortabi/BotCanvas#readme",
   "dependencies": {
+    "discord.js": "^14.27.0",
+    "dotenv": "^17.4.2",
     "wasmoon": "^1.16.0"
   },
   "devDependencies": {
