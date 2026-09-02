@@ -1,9 +1,106 @@
 import { client } from "../../../Api/src/Internal/Discord/Client";
+import { Events } from "./events";
 
+
+const events: Array<string> = [
+    "applicationCommandPermissionsUpdate",
+    "autoModerationActionExecution",
+    "autoModerationRuleCreate",
+    "autoModerationRuleDelete",
+    "autoModerationRuleUpdate",
+
+    "channelCreate",
+    "channelDelete",
+    "channelPinsUpdate",
+    "channelUpdate",
+
+    "debug",
+    "error",
+    "guildAuditLogEntryCreate",
+    "guildAvailable",
+    "guildBanAdd",
+    "guildBanRemove",
+    "guildCreate",
+    "guildDelete",
+    "guildMemberAdd",
+    "guildMemberRemove",
+    "guildMemberUpdate",
+    "guildMembersChunk",
+    "guildScheduledEventCreate",
+    "guildScheduledEventDelete",
+    "guildScheduledEventUpdate",
+    "guildScheduledEventUserAdd",
+    "guildScheduledEventUserRemove",
+    "guildUnavailable",
+    "guildUpdate",
+
+    "interactionCreate",
+
+    "inviteCreate",
+    "inviteDelete",
+
+    "messageCreate",
+    "messageDelete",
+    "messageDeleteBulk",
+    "messageReactionAdd",
+    "messageReactionRemove",
+    "messageReactionRemoveAll",
+    "messageReactionRemoveEmoji",
+    "messageUpdate",
+
+    "presenceUpdate",
+
+    "ready",
+    "raw",
+    "resume",
+
+    "roleCreate",
+    "roleDelete",
+    "roleUpdate",
+
+    "shardDisconnect",
+    "shardError",
+    "shardReady",
+    "shardReconnecting",
+    "shardResume",
+
+    "stageInstanceCreate",
+    "stageInstanceDelete",
+    "stageInstanceUpdate",
+
+    "stickerCreate",
+    "stickerDelete",
+    "stickerUpdate",
+
+    "threadCreate",
+    "threadDelete",
+    "threadListSync",
+    "threadMembersUpdate",
+    "threadUpdate",
+
+    "typingStart",
+
+    "userUpdate",
+
+    "voiceStateUpdate",
+    "voiceChannelEffectSend",
+
+    "webhooksUpdate",
+
+    "guildSoundboardSoundCreate",
+    "guildSoundboardSoundDelete",
+    "guildSoundboardSoundUpdate",
+
+    "soundboardSounds",
+
+    "messagePollVoteAdd",
+    "messagePollVoteRemove"
+];
 export class Bot {
     private m_token:string = "";
     private m_client_id: string = "";
     private m_commands: Array<any> = [];
+    private m_events: Map<string,Array<Function>> = new Map<string,Array<Function>>();
     constructor(token: string,client_id: string) {
         this.m_client_id = client_id;
         this.m_token = token;
@@ -17,6 +114,32 @@ export class Bot {
                 message.reply(`user said: ${message.content.replace("!","")}`)
             }
         }) */
+
+        
+    
+        for (const [event_name,callbacks] of this.m_events) {
+            const event = new Events(event_name);
+            for (const callback of callbacks) {
+                event.set(callback);
+            }
+        }
+
         await client.login(this.m_token);
     }
+
+    public register_event(name: string,callback: Function): void {
+        let callbacks = [];
+        callbacks.push(callback)
+        this.m_events.set(name,callbacks);
+    }
+}
+
+let bot: Bot;
+
+export function copy_bot(bot_1:Bot) {
+    bot = bot_1;
+}
+
+export function get_bot() {
+    return bot;
 }
