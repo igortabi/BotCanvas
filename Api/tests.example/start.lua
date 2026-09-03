@@ -7,3 +7,13 @@ end)
 Events.messageCreate:set(function (message)
     print(message.content)
 end)
+
+Commands.test:register("description",function (interaction)
+    local member = interaction.member;
+    if not hasPermission(member, "Administrator") then 
+        interaction:reply("test1")
+        return;
+    end
+
+    interaction:reply("test")
+end,true)

@@ -5,9 +5,8 @@ const options = {} as DotenvConfigOptions;
 options.path = path.resolve(__dirname,"./.env")
 configDotenv(options)
 
-/* useless for now.
 export const ENVIRONMENT = {
     TOKEN: process.env.TOKEN,
-    CLIENT_ID: process.env.CLIENT_ID
+    CLIENT_ID: process.env.CLIENT_ID,
+    GUILD_ID: process.env.GUILD_ID
 }
- */
