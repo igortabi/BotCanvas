@@ -16,9 +16,12 @@ async function main() {
         const built_table = table.build_table();
         lua.global.set(m_table,built_table)
     }
-    lua.global.set("Events",(name: string) => {
-        return new Events(name)
-    })
+    const events = new Proxy({}, {
+        get(target, key) {
+            return new Events(String(key))
+        }
+    });
+    lua.global.set("Events",events)
     try {
         const test_folder = path.resolve(path.resolve(__dirname,"../"), "tests");
         const tests = await fs.promises.readdir(test_folder);

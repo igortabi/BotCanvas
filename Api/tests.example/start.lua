@@ -1,11 +1,9 @@
 Client.run("your_token","your_client_id")
 
-local ready = Events("ready")
-local message_create = Events("messageCreate")
-ready:set(function (dwdw)
-    print("test")
+Events.ready:set(function (app)
+    print(app.user.tag)
 end)
 
-message_create:set(function (message)
+Events.messageCreate:set(function (message)
     print(message.content)
 end)
