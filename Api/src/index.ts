@@ -35,13 +35,7 @@ async function main() {
             return new Commands(command_name);
         }
     }))
-    lua.global.set("hasPermission", (member: GuildMember, flagName: string) => {
-        const flag = PermissionFlagsBits[flagName as keyof typeof PermissionFlagsBits];
-        if (flag === undefined) {
-            throw new Error(`Unknown permission flag: ${flagName}`);
-        }
-        return member.permissions.has(flag); // BigInt math stays in JS
-    });
+
     try {
         const test_folder = path.resolve(path.resolve(__dirname,"../"), "tests");
         const tests = await fs.promises.readdir(test_folder);

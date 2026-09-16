@@ -1,11 +1,11 @@
-import { ChatInputCommandInteraction, GuildMember, Interaction, Message, PermissionFlagsBits, REST, RESTPostAPIChatInputApplicationCommandsJSONBody, Routes } from "discord.js";
-import { Command, COMMANDS } from "./commands";
+import { Interaction, REST, RESTPostAPIChatInputApplicationCommandsJSONBody, Routes } from "discord.js";
 import { Client, ClientOptions, GatewayIntentBits, Partials } from "discord.js"
-import { ENVIRONMENT } from "../../../environment/reader";
 import { CanvasInteraction } from "./Events/Interaction";
 import { CanvasGuild } from "../Classes/guild";
 import { CanvasMember } from "../Classes/member";
 import { CanvasMessage } from "../Classes/message";
+import { COMMANDS } from "../Arrays/commands";
+import { CanvasCommand } from "../Classes/command";
 const options: ClientOptions = {
     intents: [
         GatewayIntentBits.Guilds,
@@ -45,10 +45,10 @@ const options: ClientOptions = {
     ]
 };
 
-function toDiscordBody(command: Command): RESTPostAPIChatInputApplicationCommandsJSONBody {
+function toDiscordBody(command: CanvasCommand): RESTPostAPIChatInputApplicationCommandsJSONBody {
     return {
-        name: command.name,
-        description: command.description
+        name: command.get_name(),
+        description: command.get_description()
     };
 }
 
@@ -57,27 +57,34 @@ export class Bot {
     private m_client_id: string = "";
     private m_client = {} as Client;
     private m_guilds = [] as Array<string>;
-    constructor(token: string,client_id: string,guild_id: Array<string>) {
+    private m_disable_global_commands: boolean = false;
+    constructor(token: string,client_id: string,guild_id: Array<string>,disable_global_commands: boolean) {
         this.m_client_id = client_id;
         this.m_token = token;
         this.m_guilds = guild_id;
         this.m_client = new Client(options);
+        this.m_disable_global_commands = disable_global_commands;
     }
-    public async Run(): Promise<void> {
-        await this.m_client.login(this.m_token);
-        await this.register_commands();
-        await this.execute_commands();
+    public Run(): void {
+        const login_start = performance.now();
+
+        this.m_client.login(this.m_token).then(() => {
+            console.log(`login: ${performance.now() - login_start}ms`);
+
+            const register_start = performance.now();
+
+            this.register_commands();
+            this.execute_commands();
+            console.log(`run: ${performance.now() - register_start}ms`);
+        });
     }
     public get_client(): Client {
         return this.m_client;
     }
-    private async register_commands(): Promise<void> {
+    private register_commands(): void {
         const rest = new REST().setToken(this.m_token);
 
-        const development_body = COMMANDS.filter(command => command.development_only).map(toDiscordBody);
-
-        const global_body = COMMANDS.filter(command => !command.development_only).map(toDiscordBody);
-
+        const development_body = COMMANDS.filter(command => command.get_development_only()).map(toDiscordBody);
         try {
             for (const guild_id of this.m_guilds) {
                 const route = Routes.applicationGuildCommands(
@@ -85,21 +92,30 @@ export class Bot {
                     guild_id
                 );
 
-                await rest.put(route, {
+                rest.put(route, {
                     body: development_body
+                }).then(() => {
+                    console.log(`Registered ${development_body.length} development commands in ${this.m_guilds.length}.`);
                 });
             }
-            const route = Routes.applicationCommands(this.m_client_id);
+            if (!this.m_disable_global_commands) {
+                const global_body = COMMANDS.filter(command => !command.get_development_only()).map(toDiscordBody);
+                const route = Routes.applicationCommands(this.m_client_id);
 
-            await rest.put(route, {
-                body: global_body
-            });
+                rest.put(route, {
+                    body: global_body
+                }).then(() => {
+                    console.log(`Registered ${global_body.length} global commands.`);
+                });
+            }
 
-            console.log(`Registered ${development_body.length} development commands in ${this.m_guilds.length} ${this.m_guilds.length > 1 ? "guilds" : "guild"} and ${global_body.length} global ${global_body.length > 1 ? "commands" : "command"}.`
-            );
+
+            
         } catch (err) {
             console.error("Failed to register commands:", err);
         }
+
+        
     }
     private async execute_commands(): Promise<void> {
         this.m_client.on("interactionCreate", async (interaction: Interaction) => {
@@ -107,7 +123,7 @@ export class Bot {
                 return;
             }
             const command = COMMANDS.find((c) => {
-                return c.name == interaction.commandName
+                return c.get_name() == interaction.commandName
             });
             if (!command) {
                 console.error("command not found")
@@ -122,7 +138,8 @@ export class Bot {
                 canvas_interaction.guild = guild;
                 canvas_interaction.member = member;
                 canvas_interaction.message = message;
-                await command.callback(canvas_interaction);
+                const callback = command.get_callback();
+                await callback(canvas_interaction);
             } catch (err) {
                 console.error(err);
                 if (interaction.replied || interaction.deferred) {
@@ -133,7 +150,6 @@ export class Bot {
             }
         });
     }
-
 }
 
 let bot: Bot;
