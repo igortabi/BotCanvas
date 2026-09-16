@@ -6,6 +6,7 @@ export interface Command {
     name: string,
     description: string,
     callback: (interaction: CanvasInteraction) => Promise<void>,
+    development_only: boolean
 }
 
 
@@ -17,11 +18,12 @@ export class Commands {
         this.m_name = name;
     }
 
-    public register(description: string,callback: (interaction: CanvasInteraction) => Promise<void>) {
+    public register(description: string,callback: (interaction: CanvasInteraction) => Promise<void>,development_only: boolean) {
         this.m_command = {
             name: this.m_name,
             description: description,
             callback: callback,
+            development_only: development_only
         }
         COMMANDS.push(this.m_command);
         

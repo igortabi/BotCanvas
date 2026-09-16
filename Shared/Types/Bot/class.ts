@@ -73,20 +73,34 @@ export class Bot {
     }
     private async register_commands(): Promise<void> {
         const rest = new REST().setToken(this.m_token);
-        const body: RESTPostAPIChatInputApplicationCommandsJSONBody[] = COMMANDS.map(toDiscordBody);
-        const GUILD_ID = ENVIRONMENT.GUILD_ID
+
+        const development_body = COMMANDS.filter(command => command.development_only).map(toDiscordBody);
+
+        const global_body = COMMANDS.filter(command => !command.development_only).map(toDiscordBody);
+
         try {
-            const route = GUILD_ID
-                ? Routes.applicationGuildCommands(this.m_client_id, GUILD_ID)
-                : Routes.applicationCommands(this.m_client_id);
-            
-            const result = await rest.put(route, { body }) as unknown[];
-            console.log(`Registered ${result.length} commands.`);
+            for (const guild_id of this.m_guilds) {
+                const route = Routes.applicationGuildCommands(
+                    this.m_client_id,
+                    guild_id
+                );
+
+                await rest.put(route, {
+                    body: development_body
+                });
+            }
+            const route = Routes.applicationCommands(this.m_client_id);
+
+            await rest.put(route, {
+                body: global_body
+            });
+
+            console.log(`Registered ${development_body.length} development commands in ${this.m_guilds.length} ${this.m_guilds.length > 1 ? "guilds" : "guild"} and ${global_body.length} global ${global_body.length > 1 ? "commands" : "command"}.`
+            );
         } catch (err) {
-            console.error('Failed to register commands:', err);
+            console.error("Failed to register commands:", err);
         }
     }
-
     private async execute_commands(): Promise<void> {
         this.m_client.on("interactionCreate", async (interaction: Interaction) => {
             if (!interaction.isChatInputCommand()) {
