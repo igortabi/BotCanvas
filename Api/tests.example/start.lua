@@ -8,12 +8,9 @@ Events.messageCreate:set(function (message)
     print(message.content)
 end)
 
-Commands.test:register("description",function (interaction)
-    local member = interaction.member;
-    if not hasPermission(member, "Administrator") then 
-        interaction:reply("test1")
-        return;
-    end
-
-    interaction:reply("test")
+Commands.test:register("description",function (ctx)
+    local member = ctx.member;
+    local guild = ctx.guild;
+    local message = ctx.message
+    message:reply("test123")
 end,true)

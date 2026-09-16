@@ -1,10 +1,14 @@
-import { ChatInputCommandInteraction } from 'discord.js';
+
+import { CanvasInteraction } from './Events/Interaction';
+
 
 export interface Command {
     name: string,
     description: string,
-    callback: (interaction: ChatInputCommandInteraction) => Promise<void>,
+    callback: (interaction: CanvasInteraction) => Promise<void>,
 }
+
+
 export let COMMANDS: Array<Command> = new Array();
 export class Commands {
     private m_command = {} as Command;
@@ -13,7 +17,7 @@ export class Commands {
         this.m_name = name;
     }
 
-    public register(description: string,callback: (interaction: ChatInputCommandInteraction) => Promise<void>) {
+    public register(description: string,callback: (interaction: CanvasInteraction) => Promise<void>) {
         this.m_command = {
             name: this.m_name,
             description: description,

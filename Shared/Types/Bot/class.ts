@@ -1,7 +1,11 @@
-import { ChatInputCommandInteraction, GuildMember, Interaction, PermissionFlagsBits, REST, RESTPostAPIChatInputApplicationCommandsJSONBody, Routes } from "discord.js";
+import { ChatInputCommandInteraction, GuildMember, Interaction, Message, PermissionFlagsBits, REST, RESTPostAPIChatInputApplicationCommandsJSONBody, Routes } from "discord.js";
 import { Command, COMMANDS } from "./commands";
 import { Client, ClientOptions, GatewayIntentBits, Partials } from "discord.js"
 import { ENVIRONMENT } from "../../../environment/reader";
+import { CanvasInteraction } from "./Events/Interaction";
+import { CanvasGuild } from "../Classes/guild";
+import { CanvasMember } from "../Classes/member";
+import { CanvasMessage } from "../Classes/message";
 const options: ClientOptions = {
     intents: [
         GatewayIntentBits.Guilds,
@@ -96,7 +100,15 @@ export class Bot {
                 return;
             }
             try {
-                await command.callback(interaction);
+                let canvas_interaction = {} as CanvasInteraction
+                const guild = new CanvasGuild(interaction.guild);
+                //@ts-ignore
+                const member = new CanvasMember(interaction.member);
+                const message = new CanvasMessage(interaction);
+                canvas_interaction.guild = guild;
+                canvas_interaction.member = member;
+                canvas_interaction.message = message;
+                await command.callback(canvas_interaction);
             } catch (err) {
                 console.error(err);
                 if (interaction.replied || interaction.deferred) {
