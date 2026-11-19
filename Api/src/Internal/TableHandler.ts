@@ -40,11 +40,6 @@ export async function HandleTables(tables: Array<Internal>) {
             const folder_path = path.resolve(tables_path, folder);
 
             const files = await fs.promises.readdir(folder_path);
-        
-            if (folder == "Events") {
-                
-                continue;
-            }
             for (const file of files) {
                 let field = new Internal(folder)
                 if (!file.endsWith(".ts")) {
@@ -66,6 +61,6 @@ export async function HandleTables(tables: Array<Internal>) {
             field.set_callback(module_runner)
             tables.push(field);
         }
-
     }
+
 }

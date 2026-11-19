@@ -1,3 +1,5 @@
+import { events } from "../../../Api/src/Internal/EventSystem";
+import { CanvasInteraction } from "../Bot/Events/Interaction";
 import { Command } from "../Interfaces/command";
 import { CanvasOptions } from "../Interfaces/options";
 
@@ -41,4 +43,19 @@ export class CanvasCommand {
         this.m_options.push(inter_option);
         return option;
     }
+    public set_callback(new_callback: (interaction: CanvasInteraction) => Promise<void>) {
+        this.m_command.callback = new_callback;
+    }
+    public set_description(new_description: string) {
+        if (this.m_command.description == new_description) {
+            return;
+        }
+        this.m_command.description = new_description;
+        console.log(`new_description: ${new_description}`)
+        events.trigger("refrash_commands",{
+
+        })
+        console.log(`updated description`)
+    }
+
 }

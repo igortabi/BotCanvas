@@ -6,4 +6,7 @@ export class CanvasGuild {
     public constructor(guild: Guild | null) {
         this.m_guild = guild;
     }
+    public get_id(): string | undefined {
+        return this.m_guild?.id;
+    }
 }
