@@ -17,6 +17,9 @@ class EventSystem {
 
         this.events_m.set(name, e);
     }
+    public clear(): void {
+        this.events_m.clear();
+    }
     public async trigger(name: string, args: any) {
         const callbacks = this.events_m.get(name);
 

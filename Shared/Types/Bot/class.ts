@@ -59,6 +59,8 @@ export class Bot {
     private m_client = {} as Client;
     private m_guilds = [] as Array<string>;
     private m_disable_global_commands: boolean = false;
+    private m_registration_queue: Promise<void> = Promise.resolve();
+    private m_interaction_listener_active: boolean = false;
     constructor(token: string,client_id: string,guild_id: Array<string>,disable_global_commands: boolean) {
         this.m_client_id = client_id;
         this.m_token = token;
@@ -68,25 +70,43 @@ export class Bot {
     }
     public Run(): void {
         const login_start = performance.now();
-        events.listen("refrash_commands",async () => {
-            console.log(`ran refrash_commands event`)
-            
-            this.m_client.login(this.m_token).then(() => {
-                console.log(`login: ${performance.now() - login_start}ms`);
+        events.listen("refrash_commands", async () => {
+            console.log(`ran refrash_commands event`);
 
-                const register_start = performance.now();
-                this.register_commands();
-                this.execute_commands();
-                console.log(`run: ${performance.now() - register_start}ms`);
+            if (!this.m_client.isReady()) {
+                return;
+            }
+
+            await this.refresh_commands();
+        });
+
+        this.m_client.login(this.m_token).then(async () => {
+            console.log(`login: ${performance.now() - login_start}ms`);
+
+            const register_start = performance.now();
+            this.execute_commands();
+            await this.refresh_commands();
+            console.log(`run: ${performance.now() - register_start}ms`);
+        }).catch((error) => {
+            console.error("Failed to log in:", error);
+        });
+    }
+
+    private refresh_commands(): Promise<void> {
+        this.m_registration_queue = this.m_registration_queue
+            .then(() => this.register_commands())
+            .catch((error) => {
+                console.error("Failed to refresh commands:", error);
             });
-        })
-        events.trigger("refrash_commands",{
 
-        })
-
+        return this.m_registration_queue;
     }
     public get_client(): Client {
         return this.m_client;
+    }
+
+    public Destroy(): void {
+        this.m_client.destroy();
     }
 
     private async register_commands(): Promise<void> {
@@ -142,6 +162,12 @@ export class Bot {
     }
 
     private async execute_commands(): Promise<void> {
+        if (this.m_interaction_listener_active) {
+            return;
+        }
+
+        this.m_interaction_listener_active = true;
+
         this.m_client.on("interactionCreate", async (interaction: Interaction) => {
             if (!interaction.isChatInputCommand()) {
                 return;
@@ -152,13 +178,19 @@ export class Bot {
             });
             if (!command) {
                 console.error("command not found")
-                interaction.reply({
+                await interaction.reply({
                     content: "This command doesnt exists",
                     ephemeral: true
-                })
+                }).catch((error) => {
+                    console.error("Failed to reply to unknown command:", error);
+                });
                 return;
             }
             try {
+                if (!interaction.deferred && !interaction.replied) {
+                    await interaction.deferReply();
+                }
+
                 let canvas_interaction = {} as CanvasInteraction
                 const guild = new CanvasGuild(interaction.guild);
                 //@ts-ignore
@@ -171,10 +203,15 @@ export class Bot {
                 await callback(canvas_interaction);
             } catch (err) {
                 console.error(err);
-                if (interaction.replied || interaction.deferred) {
-                    await interaction.followUp({ content: "Error executing command.", ephemeral: true });
-                } else {
-                    await interaction.reply({ content: "Error executing command.", ephemeral: true });
+
+                try {
+                    if (interaction.deferred || interaction.replied) {
+                        await interaction.editReply({ content: "Error executing command." });
+                    } else {
+                        await interaction.reply({ content: "Error executing command.", ephemeral: true });
+                    }
+                } catch (reply_error) {
+                    console.error("Failed to report command error:", reply_error);
                 }
             }
         });

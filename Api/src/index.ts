@@ -5,8 +5,12 @@ import path from 'node:path';
 import fs from "node:fs";
 import { Events } from '../../Shared/Types/Bot/events';
 import { Commands } from '../../Shared/Types/Bot/commands';
+import { get_bot } from '../../Shared/Types/Bot/class';
+import { clear_commands } from '../../Shared/Types/Arrays/commands';
+import { events } from './Internal/EventSystem';
 const chokidar = require("chokidar");
 let lua: unknown;
+let reload_queue: Promise<void> = Promise.resolve();
 
 async function create_api() {
     const factory = new LuaFactory();
@@ -59,6 +63,16 @@ async function create_api() {
 
 
 async function run_tests() {
+    events.clear();
+
+    const previous_bot = get_bot();
+
+    if (previous_bot) {
+        previous_bot.Destroy();
+    }
+
+    clear_commands();
+
     if (lua) {
         //@ts-ignore
         lua.global.close();
@@ -86,6 +100,16 @@ async function run_tests() {
     }
 }
 
+function schedule_reload(): Promise<void> {
+    reload_queue = reload_queue
+        .then(() => run_tests())
+        .catch((error) => {
+            console.error("Failed to reload:", error);
+        });
+
+    return reload_queue;
+}
+
 async function main() {
     const test_folder = path.resolve(__dirname, "../tests");
 
@@ -94,10 +118,10 @@ async function main() {
         awaitWriteFinish: true
     }).on("change", async (file: any) => {
         console.log(`\nFile changed: ${path.basename(file)}`);
-        await run_tests();
+        await schedule_reload();
     });
 
-    await run_tests();
+    await schedule_reload();
 }
 
 main();

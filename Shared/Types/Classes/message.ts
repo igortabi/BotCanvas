@@ -7,9 +7,16 @@ export class CanvasMessage {
     public constructor(interaction: ChatInputCommandInteraction) {
         this.m_interaction = interaction;
     }
-    public reply(content: string): void {
-
-        this.m_interaction.reply(content);
+    public async reply(content: string): Promise<void> {
+        try {
+            if (this.m_interaction.deferred || this.m_interaction.replied) {
+                await this.m_interaction.editReply(content);
+            } else {
+                await this.m_interaction.reply(content);
+            }
+        } catch (error) {
+            console.error("Failed to reply to interaction:", error);
+        }
     }
     public get_author(): CanvasMember | null {
         if (!this.m_interaction.member) {

@@ -24,6 +24,15 @@ export class Commands {
             development_only: development_only
         }
         this.m_command = new CanvasCommand(base_command);
+
+        const existing = COMMANDS.findIndex(
+            command => command.get_name() === this.m_name
+        );
+
+        if (existing !== -1) {
+            COMMANDS.splice(existing, 1);
+        }
+
         COMMANDS.push(this.m_command);
         return this.m_command;
     }
