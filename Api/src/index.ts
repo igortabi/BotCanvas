@@ -8,21 +8,22 @@ import { Commands } from '../../Shared/Types/Bot/commands';
 import { get_bot } from '../../Shared/Types/Bot/class';
 import { clear_commands } from '../../Shared/Types/Arrays/commands';
 import { events } from './Internal/EventSystem';
+import { CanvasChannel } from '../../Shared/Types/Classes/channel';
+import { ENGINE, load_engine_global } from '../../Shared/Data/engine';
 const chokidar = require("chokidar");
-let lua: unknown;
 let reload_queue: Promise<void> = Promise.resolve();
 
 async function create_api() {
-    const factory = new LuaFactory();
-    const lua = await factory.createEngine();
-
+    await load_engine_global();
+    const lua = ENGINE;
+    if (!lua) {
+        return;
+    }
     let tables: Array<Internal> = [];
     await HandleTables(tables);
-
-    lua.global.loadLibrary(LuaLibraries.Base);
-    lua.global.loadLibrary(LuaLibraries.Package);
-    lua.global.loadLibrary(LuaLibraries.String);
-
+    lua.load_library(LuaLibraries.Base);
+    lua.load_library(LuaLibraries.Package);
+    lua.load_library(LuaLibraries.String);
     const built_tables = new Map<string, Record<string, Function>>();
 
     for (const table of tables) {
@@ -34,12 +35,11 @@ async function create_api() {
     }
 
     for (const [table_name, built_table] of built_tables) {
-        lua.global.set(table_name, built_table);
+        lua.add_global(table_name,built_table)
     }
 
     const cache = new Map<string, Events>();
-
-    lua.global.set("Events", new Proxy({}, {
+    lua.add_global("Events", new Proxy({}, {
         get(target, key) {
             const event_name = String(key);
 
@@ -51,7 +51,7 @@ async function create_api() {
         }
     }));
 
-    lua.global.set("Commands", new Proxy({}, {
+    lua.add_global("Commands", new Proxy({}, {
         get(target, key) {
             return new Commands(String(key));
         }
@@ -72,13 +72,7 @@ async function run_tests() {
     }
 
     clear_commands();
-
-    if (lua) {
-        //@ts-ignore
-        lua.global.close();
-    }
-
-    lua = await create_api();
+    const lua = await create_api();
 
     const test_folder = path.resolve(__dirname, "../tests");
     const tests = await fs.promises.readdir(test_folder);
@@ -92,8 +86,10 @@ async function run_tests() {
         console.log(`\nRunning: ${test}`);
 
         try {
-            //@ts-ignore
-            await lua.doString(content);
+            if (!lua) {
+                return;
+            }
+            await lua.run(content);
         } catch (error) {
             console.error(`Error in ${test}:`, error);
         }

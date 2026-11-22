@@ -27,4 +27,7 @@ export class CanvasMember {
 
         return this.m_member.permissions.has(flag);
     }
+    public is_bot() {
+        return this.m_member.user.bot;
+    }
 }

@@ -1,4 +1,4 @@
-import { Interaction, REST, RESTPostAPIChatInputApplicationCommandsJSONBody, Routes } from "discord.js";
+import { Interaction, REST, RESTPostAPIChatInputApplicationCommandsJSONBody, Routes, TextChannel } from "discord.js";
 import { Client, ClientOptions, GatewayIntentBits, Partials } from "discord.js"
 import { CanvasInteraction } from "./Events/Interaction";
 import { CanvasGuild } from "../Classes/guild";
@@ -7,6 +7,8 @@ import { CanvasMessage } from "../Classes/message";
 import { COMMANDS } from "../Arrays/commands";
 import { CanvasCommand } from "../Classes/command";
 import { events } from "../../../Api/src/Internal/EventSystem";
+import { CanvasChannel } from "../Classes/channel";
+import { ENGINE } from "../../Data/engine";
 const options: ClientOptions = {
     intents: [
         GatewayIntentBits.Guilds,
@@ -69,6 +71,7 @@ export class Bot {
         this.m_disable_global_commands = disable_global_commands;
     }
     public Run(): void {
+        
         const login_start = performance.now();
         events.listen("refrash_commands", async () => {
             console.log(`ran refrash_commands event`);
@@ -81,8 +84,29 @@ export class Bot {
         });
 
         this.m_client.login(this.m_token).then(async () => {
-            console.log(`login: ${performance.now() - login_start}ms`);
+            const client = this.m_client;
+            ENGINE.add_global("Channels", new Proxy({}, {
+                get(target, key) {
+                    if (typeof key !== "string") return undefined;
+                    if (key === "then" || key === "toJSON") return undefined;
 
+                    const cached = client.channels.cache.get(key);
+
+                    if (cached) {
+                        //@ts-ignore
+                        return new CanvasChannel(cached);
+                    }
+
+                    return client.channels.fetch(key).then(channel => {
+                        if (!channel?.isSendable() || !channel.isTextBased()) {
+                            return undefined;
+                        }
+
+                        return new CanvasChannel(channel);
+                    });
+                }
+            }));
+            console.log(`login: ${performance.now() - login_start}ms`);
             const register_start = performance.now();
             this.execute_commands();
             await this.refresh_commands();
@@ -196,9 +220,12 @@ export class Bot {
                 //@ts-ignore
                 const member = new CanvasMember(interaction.member);
                 const message = new CanvasMessage(interaction);
+                const channel = new CanvasChannel(interaction.channel);
+                
                 canvas_interaction.guild = guild;
                 canvas_interaction.member = member;
                 canvas_interaction.message = message;
+                canvas_interaction.channel = channel;
                 const callback = command.get_callback();
                 await callback(canvas_interaction);
             } catch (err) {
